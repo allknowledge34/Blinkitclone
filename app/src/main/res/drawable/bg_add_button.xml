@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <!-- बॉर्डर का रंग और मोटाई -->
+            <stroke android:width="3dp" android:color="#008000"/>
+            <corners android:radius="10dp"/>
+            <solid android:color="@android:color/transparent"/>
+        </shape>
+    </item>
+</selector>
