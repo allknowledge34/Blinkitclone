@@ -4,9 +4,9 @@
 A fully functional Blinkit-style grocery delivery Android application built using **Kotlin**, **MVVM architecture**, **Firebase**, and **PhonePe UPI integration**. The app supports real-time OTP authentication, persistent cart, product browsing, live order tracking, and an admin dashboard to manage products and orders.
 
 
-## Screenshots
+## Demo
 
-![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+![App Demo](app/src/main/res/drawable/demo.gif)
 
 
 ## Features
