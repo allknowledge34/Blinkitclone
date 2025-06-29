@@ -47,7 +47,7 @@ class OrderPlaceActivity : AppCompatActivity(), PaymentResultWithDataListener {
         Checkout.preload(applicationContext)
         val co = Checkout()
 
-        co.setKeyID("rzp_test_ff6Y3a2cHSb1wR")
+        co.setKeyID("You Api Key")
     }
 
     private fun onPlaceOrderClicked() {
