@@ -1,10 +1,12 @@
 package com.sachin.blinkitclone.activity
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -13,6 +15,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.razorpay.Checkout
+import com.razorpay.PaymentData
+import com.razorpay.PaymentResultWithDataListener
 import com.sachin.blinkitclone.CartListener
 import com.sachin.blinkitclone.R
 import com.sachin.blinkitclone.Utils
@@ -22,12 +27,14 @@ import com.sachin.blinkitclone.databinding.AddressLayoutBinding
 import com.sachin.blinkitclone.models.Orders
 import com.sachin.blinkitclone.viewmodels.UserViewModel
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
-class OrderPlaceActivity : AppCompatActivity() {
+class OrderPlaceActivity : AppCompatActivity(), PaymentResultWithDataListener {
     private lateinit var binding: ActivityOrderPlaceBinding
     private val viewModel : UserViewModel by viewModels()
     private lateinit var adapterCartProducts: AdapterCartProducts
     private var cartListener : CartListener?=null
+    private var grandTotalAmount = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityOrderPlaceBinding.inflate(layoutInflater)
@@ -36,13 +43,19 @@ class OrderPlaceActivity : AppCompatActivity() {
         getAllCartProducts()
         backToUserMainActivity()
         onPlaceOrderClicked()
+
+        Checkout.preload(applicationContext)
+        val co = Checkout()
+
+        co.setKeyID("rzp_test_ff6Y3a2cHSb1wR")
     }
 
     private fun onPlaceOrderClicked() {
         binding.btnNext.setOnClickListener {
             viewModel.getAddressStatus().observe(this){status->
                 if (status){
-                    saveOrder()
+
+                    initPayment()
                 }
                 else{
                     val addressLayoutBinding = AddressLayoutBinding.inflate(LayoutInflater.from(this))
@@ -56,6 +69,38 @@ class OrderPlaceActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun initPayment() {
+
+        val activity: Activity = this
+        val co = Checkout()
+
+        try {
+            val options = JSONObject()
+            options.put("name","BlinkitClone")
+            options.put("description","Total Amount")
+            //You can omit the image option to fetch the image from the Dashboard
+            options.put("image",R.drawable.app_icon)
+            options.put("theme.color", "#3399cc");
+            options.put("currency","INR");
+            options.put("amount",(grandTotalAmount*100).toString())
+
+            val retryObj = JSONObject();
+            retryObj.put("enabled", true);
+            retryObj.put("max_count", 9);
+            options.put("retry", retryObj);
+
+            val prefill = JSONObject()
+            prefill.put("email","allknowledge34@gmail.com")
+            prefill.put("contact","9999999999")
+
+            options.put("prefill",prefill)
+            co.open(activity,options)
+        }catch (e: Exception){
+            Toast.makeText(activity,"Error in payment: "+ e.message,Toast.LENGTH_LONG).show()
+            e.printStackTrace()
         }
     }
 
@@ -82,6 +127,8 @@ class OrderPlaceActivity : AppCompatActivity() {
                         viewModel.deleteCartProducts()
                         viewModel.savinCartItemCount(0)
                         cartListener?.hideCartLayout()
+
+                        Utils.hideDialog()
                         startActivity(Intent(this@OrderPlaceActivity, UsersMainActivity::class.java))
                         finish()
                     }
@@ -105,9 +152,10 @@ class OrderPlaceActivity : AppCompatActivity() {
             viewModel.saveUserAddress(address)
             viewModel.saveAddressStatus()
         }
-        Utils.showToast(this, "Saved..")
+        Utils.showToast(this, "Address Saved..")
         alertDialog.dismiss()
-        Utils.hideDialog()
+
+        initPayment()
     }
 
     private fun backToUserMainActivity() {
@@ -140,7 +188,8 @@ class OrderPlaceActivity : AppCompatActivity() {
                 binding.tvDeliveryCharge.text ="₹50"
                 totalPrice +=50
             }
-            binding.tvGrandTotal.text = totalPrice.toString()
+            grandTotalAmount = totalPrice
+            binding.tvGrandTotal.text = "₹$totalPrice"
         }
     }
     private fun setStatusBarColor() {
@@ -151,5 +200,14 @@ class OrderPlaceActivity : AppCompatActivity() {
                 decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             }
         }
+    }
+
+    override fun onPaymentSuccess(p0: String?, p1: PaymentData?) {
+        Toast.makeText(this, "Payment Success", Toast.LENGTH_SHORT).show()
+        saveOrder()
+    }
+
+    override fun onPaymentError(p0: Int, p1: String?, p2: PaymentData?) {
+        Toast.makeText(this, "Error: ${p1}", Toast.LENGTH_SHORT).show()
     }
 }
